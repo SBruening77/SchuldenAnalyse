@@ -1,0 +1,40 @@
+Sparkasse Musterstadt
+Kontoauszug 3/2024
+Max Mustermann
+Musterstraße 1
+12345 Musterstadt
+Girokonto Kontonummer 1234567890
+IBAN DE12 3456 7890 1234 5678 90 BIC MUSDE12XXX
+Eingeräumte Kontoüberziehung 1.000,00 EUR
+Datum Erläuterung Betrag EUR
+Kontostand am 29.02.2024, Auszug Nr. 2 -312,45 S
+01.03. Lastschrift Einzug 45,99 S
+Vodafone GmbH
+Rechnung 03/2024 Kundennr 123456 Mandat: 987654 Gläubiger-ID: DE98ZZZ09999999999
+01.03. Dauerauftrag 650,00 S
+Wohnungsbau Musterstadt GmbH
+Miete Musterstraße 1 03/2024
+04.03. Lohn/Gehalt 2.100,00 H
+Arbeitgeber GmbH
+Gehalt 03/2024 Personalnr 4711
+05.03. Kartenzahlung 54,32 S
+REWE SAGT DANKE. 44//Musterstadt/DE 2024-03-05T10:15:22 Folgenr.001 Verfalld.2026-12
+Seite 1 / 2
+Sparkasse Musterstadt
+Kontoauszug 3/2024
+Datum Erläuterung Betrag EUR
+Übertrag 1.037,24 H
+07.03. Lastschrift Einzug 12,99 S
+Netflix International B.V.
+Netflix Abo Mandat: NFX123 Gläubiger-ID: NL12ZZZ000000000000
+12.03. Entgeltabrechnung 8,90 S
+siehe Anlage
+15.03. Rücklastschrift 39,90 S
+Fitness First GmbH
+Rückgabe Lastschrift mangels Deckung Rücklastschriftgebühr 3,00 EUR enthalten
+20.03. Bargeldauszahlung 200,00 S
+GA NR00012345 BLZ12345678 20.03./14:22 Uhr
+28.03. Abschluss 14,76 S
+Sollzinsen Dispositionskredit 14,76 EUR
+Kontostand am 31.03.2024 um 20:00 Uhr 760,69 H
+Die Einlagen sind durch die Institutssicherung der Sparkassen-Finanzgruppe geschützt.

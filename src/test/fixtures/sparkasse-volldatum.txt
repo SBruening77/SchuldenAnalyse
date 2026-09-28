@@ -1,0 +1,33 @@
+Ihre Sparkasse
+Sparkasse Musterstadt
+Max Mustermann
+Musterweg 5
+12345 Musterstadt
+Kontoauszug 8/2026 Seite 1 von 2
+Privatgirokonto DE12345678901234567890
+Datum Erläuterung Betrag EUR
+Kontostand am 31.07.2026, Auszug Nr. 7 2.175,21
+01.08.2026 Lastschrift -650,00
+Wohnbau Musterstadt GmbH Miete 08/2026
+Mandatsreferenz M123456 Gläubiger-ID: DE98ZZZ09999999999
+03.08.2026 Lastschrift -24,39
+ABC Bank AG Darlehen 1234567890
+01.08.2026 Saldo: 12.345,67- Tilgung 200,00 Zinsen 24,39
+Gläubiger-ID: DE11ZZZ00000000001
+05.08.2026 Geldautomat -50,00
+Sparkasse//Musterstadt/DE 2026-08-05T12:01:11 Folgenr.0
+2026-12
+06.08.2026 Kartenzahlungen -23,45
+REWE Musterstadt//Musterstadt/DE 2026-08-06T18:32:41 Folgenr.1
+2026-12
+Kontoauszug 8/2026 Seite 2 von 2
+Datum Erläuterung Betrag EUR
+15.08.2026 Sonst. Buchung -100,00
+Sparkasse Kreditkarte Abrechnung 07/2026
+28.08.2026 Lohn-/Gehaltsgutschrift 2.400,00
+Arbeitgeber GmbH Lohn/Gehalt 08/2026
+30.08.2026 SB-Einzug Gutschr. 12,00
+Rückzahlung Pfand
+Kontostand am 31.08.2026 um 20:00 Uhr 3.739,37
+Ihr Dispositionskredit EUR: 1.500,00
+· Der ausgewiesene Kontostand berücksichtigt nicht die Wertstellung der einzelnen Buchungen.
