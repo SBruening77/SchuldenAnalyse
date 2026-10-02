@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom'
+import type { EscapeStufe, KandidatStufe } from '../analysis/escape'
 import { useAppData } from '../hooks/useData'
 import { formatDate, formatDateShort, formatEur, formatMonth, monthKeyOf, parseIso, todayIso } from '../lib/format'
 import { Callout, EmptyState, Money, PageHeader, ProgressBar, Section } from '../components/ui'
 
+const KUENDIGUNGS_GRUPPEN: Array<{ stufe: KandidatStufe; titel: string; text: string }> = [
+  { stufe: 'sofort', titel: 'Sofort kündbar', text: 'Abos, meist ohne lange Frist' },
+  { stufe: 'pruefen', titel: 'Erst prüfen', text: 'Verträge mit Kündigungsfrist' },
+  { stufe: 'belastend', titel: 'Belastet dauerhaft', text: 'Raten und Kredite lassen sich selten einfach kündigen' },
+]
+
 export function Dashboard() {
-  const { loading, transactions, budget, debt, categoryById, recurring } = useAppData()
+  const { loading, transactions, budget, debt, categoryById, recurring, escape } = useAppData()
   const today = todayIso()
 
   if (loading) return <PageHeader title="SchuldenAnalyse" />
@@ -158,6 +165,102 @@ export function Dashboard() {
           </Section>
         )}
 
+        {(escape.kandidaten.length > 0 || escape.unzugeordnet > 0) && (
+          <Section title="Was du kündigen kannst">
+            <div className="card space-y-4">
+              {escape.kuendbarMonatlich > 0 && (
+                <p className="text-sm text-slate-300">
+                  Kündbare Posten: <span className="font-semibold text-emerald-400">{formatEur(escape.kuendbarMonatlich, { abs: true })}/Monat</span>
+                </p>
+              )}
+              {KUENDIGUNGS_GRUPPEN.map((g) => {
+                const items = escape.kandidaten.filter((k) => k.stufe === g.stufe)
+                if (items.length === 0) return null
+                return (
+                  <div key={g.stufe}>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{g.titel}</p>
+                    <p className="mb-1.5 text-[11px] text-slate-500">{g.text}</p>
+                    <ul className="divide-y divide-slate-800">
+                      {items.map((k) => (
+                        <li key={k.key} className="flex items-center justify-between gap-3 py-2 text-sm">
+                          <div className="min-w-0">
+                            <p className="truncate">{kurzName(k.name)}</p>
+                            <p className="text-xs text-slate-500">
+                              {k.kategorieName} · {k.intervall}
+                              {k.dispoAusloeser ? ' · hat den Dispo mit ausgelöst' : ''}
+                            </p>
+                          </div>
+                          <span className="shrink-0 tabular-nums text-rose-300">{formatEur(k.monatlich, { abs: true })}/Mon.</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+              {escape.unzugeordnet > 0 && (
+                <p className="text-xs text-slate-400">
+                  {escape.unzugeordnet === 1
+                    ? '1 wiederkehrende Ausgabe hat keine Kategorie. '
+                    : `${escape.unzugeordnet} wiederkehrende Ausgaben haben keine Kategorie. `}
+                  <Link to="/buchungen" className="text-emerald-400 underline">
+                    In den Buchungen zuordnen
+                  </Link>
+                  , dann erscheinen sie hier.
+                </p>
+              )}
+            </div>
+          </Section>
+        )}
+
+        <Section title="Raus aus dem Dispo">
+          {!escape.kontostandBekannt ? (
+            <Callout kind="info">
+              Kontostand unbekannt – der Abbauplan braucht einen Stand aus dem Auszug oder den{' '}
+              <Link to="/einstellungen" className="underline">
+                Einstellungen
+              </Link>
+              .
+            </Callout>
+          ) : !escape.imMinus ? (
+            <Callout kind="ok">Du bist nicht im Minus.</Callout>
+          ) : (
+            <div className="card space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Stat label="Lücke bis Null" value={formatEur(escape.luecke, { abs: true })} sub="aktueller Dispo" valueClass="text-rose-400" />
+                <Stat
+                  label="Überschuss"
+                  value={`${formatEur(escape.ueberschussMonatlich)}/Mon.`}
+                  sub={escape.ueberschussQuelle === 'durchschnitt' ? 'Durchschnitt der letzten Monate' : 'Einnahmen minus Fixkosten'}
+                  valueClass={escape.ueberschussMonatlich > 0 ? 'text-emerald-400' : 'text-rose-400'}
+                />
+              </div>
+              {escape.monateBasis !== undefined ? (
+                <p className="text-sm text-slate-200">
+                  Bei heutigem Kurs in <span className="font-semibold">{inDauer(escape.monateBasis)}</span> auf Null.
+                </p>
+              ) : (
+                escape.hinweis && <Callout kind="hoch">{escape.hinweis}</Callout>
+              )}
+              {escape.ueberDispolimit && <Callout kind="hoch">Die Lücke liegt über deinem Dispolimit.</Callout>}
+              {escape.stufen.length > 0 && (
+                <ul className="space-y-2 border-t border-slate-800 pt-3">
+                  {escape.stufen.map((s) => (
+                    <li key={s.name} className="text-sm text-slate-200">
+                      {stufenText(s)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {escape.variablerHebel && (
+                <p className="text-xs text-slate-400">
+                  10 % weniger bei {escape.variablerHebel.name} = {formatEur(escape.variablerHebel.zehnProzent, { abs: true })}/Monat
+                  {' '}(aktuell {formatEur(escape.variablerHebel.monatlich, { abs: true })}/Monat).
+                </p>
+              )}
+            </div>
+          )}
+        </Section>
+
         {/* Letzter Monat */}
         {lastMonth && (
           <Section title={`Rückblick ${formatMonth(lastMonth.monat)}`}>
@@ -189,6 +292,45 @@ export function Dashboard() {
       </div>
     </div>
   )
+}
+
+function monateZahl(n: number): string {
+  return (Math.round(n * 10) / 10).toLocaleString('de-DE', { maximumFractionDigits: 1 })
+}
+
+function inDauer(n: number): string {
+  const r = Math.round(n * 10) / 10
+  if (r >= 18) {
+    const y = Math.round((r / 12) * 10) / 10
+    return Math.abs(y - 1) < 0.05 ? '1 Jahr' : `${y.toLocaleString('de-DE', { maximumFractionDigits: 1 })} Jahren`
+  }
+  if (Math.abs(r - 1) < 0.05) return '1 Monat'
+  return `${monateZahl(n)} Monaten`
+}
+
+function dauer(n: number): string {
+  const r = Math.round(n * 10) / 10
+  if (r >= 18) {
+    const y = Math.round((r / 12) * 10) / 10
+    return Math.abs(y - 1) < 0.05 ? '1 Jahr' : `${y.toLocaleString('de-DE', { maximumFractionDigits: 1 })} Jahre`
+  }
+  if (Math.abs(r - 1) < 0.05) return '1 Monat'
+  return `${monateZahl(n)} Monate`
+}
+
+function kurzName(name: string): string {
+  const clean = name.replace(/\s+/g, ' ').trim()
+  return clean.length > 48 ? `${clean.slice(0, 46)}…` : clean
+}
+
+function stufenText(s: EscapeStufe): string {
+  const titel = `${kurzName(s.name)} ${s.aktion}`
+  if (s.monateFrueher !== undefined) {
+    const zins = s.zinsenGespart !== undefined && s.zinsenGespart >= 0.5 ? `, spart ca. ${formatEur(s.zinsenGespart, { abs: true })} Zinsen` : ''
+    return `${titel} → ${dauer(s.monateFrueher)} früher raus${zins}`
+  }
+  if (s.monate !== undefined) return `${titel} → dann in ${inDauer(s.monate)} raus`
+  return `${titel} → +${formatEur(s.betragMonatlich, { abs: true })}/Monat, reicht noch nicht`
 }
 
 function Stat({ label, value, sub, valueClass = '' }: { label: string; value: string; sub?: string; valueClass?: string }) {

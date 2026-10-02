@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS, type BalancePoint, type Category, type Rule, type Set
 import { detectRecurring, type RecurringItem } from '../analysis/recurring'
 import { computeBudget, type BudgetResult } from '../analysis/budget'
 import { analyzeDebt, type DebtAnalysis } from '../analysis/debt'
+import { buildEscapePlan, type EscapePlan } from '../analysis/escape'
 import { todayIso } from '../lib/format'
 
 export interface AppData {
@@ -19,6 +20,7 @@ export interface AppData {
   recurring: RecurringItem[]
   budget: BudgetResult
   debt: DebtAnalysis
+  escape: EscapePlan
 }
 
 export function useCategories() {
@@ -58,6 +60,10 @@ export function useAppData(): AppData {
   const recurring = useMemo(() => detectRecurring(txs, { referenceDate: today }), [txs, today])
   const budget = useMemo(() => computeBudget(txs, anchors, recurring, settings, today), [txs, anchors, recurring, settings, today])
   const debt = useMemo(() => analyzeDebt(txs, categories, anchors, recurring, today), [txs, categories, anchors, recurring, today])
+  const escape = useMemo(
+    () => buildEscapePlan(txs, categories, recurring, budget, settings, anchors),
+    [txs, categories, recurring, budget, settings, anchors],
+  )
 
   return {
     loading: transactions === undefined,
@@ -71,5 +77,6 @@ export function useAppData(): AppData {
     recurring,
     budget,
     debt,
+    escape,
   }
 }

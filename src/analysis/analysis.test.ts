@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from '../db/types'
 import { detectRecurring, monthlyFixedCosts } from './recurring'
 import { buildBalanceSeries, negativeEpisodes, summarizeMonths, totalsByCategory, analyzeDebt } from './debt'
 import { budgetPeriod, computeBudget, currentBalance } from './budget'
+import { buildEscapePlan } from './escape'
 import { categorize, buildCategoryLookup } from '../categorize/rules'
 import { DEFAULT_CATEGORIES, DEFAULT_RULES } from '../categorize/defaultRules'
 
@@ -191,5 +192,72 @@ describe('Budget', () => {
     const b = computeBudget(sample, [], [], DEFAULT_SETTINGS, '2024-04-05')
     expect(b.kontostand).toBeUndefined()
     expect(b.hinweise[0]).toMatch(/Kein Kontostand/)
+  })
+})
+
+describe('Dispo-Abbau', () => {
+  // Gehalt 200, Miete 140, Vodafone 20, Netflix 10 → Überschuss 30 €; Kontostand −200
+  const txs = [
+    tx('2024-01-01', 200, 'Arbeitgeber GmbH', 'Gehalt / Lohn'),
+    tx('2024-01-05', -140, 'Wohnungsbau GmbH', 'Miete / Wohnen'),
+    tx('2024-01-06', -20, 'Vodafone GmbH', 'Telefon / Internet'),
+    tx('2024-01-07', -10, 'Netflix', 'Abos / Streaming'),
+    tx('2024-01-28', -6, 'Abschluss Dispozinsen', 'Dispozinsen / Kontoführung'),
+    tx('2024-02-01', 200, 'Arbeitgeber GmbH', 'Gehalt / Lohn'),
+    tx('2024-02-05', -140, 'Wohnungsbau GmbH', 'Miete / Wohnen'),
+    tx('2024-02-06', -20, 'Vodafone GmbH', 'Telefon / Internet'),
+    tx('2024-02-07', -10, 'Netflix', 'Abos / Streaming'),
+    tx('2024-02-15', -80, 'REWE', 'Lebensmittel'),
+    tx('2024-03-01', 200, 'Arbeitgeber GmbH', 'Gehalt / Lohn'),
+    tx('2024-03-05', -140, 'Wohnungsbau GmbH', 'Miete / Wohnen'),
+    tx('2024-03-06', -20, 'Vodafone GmbH', 'Telefon / Internet'),
+    tx('2024-03-07', -10, 'Netflix', 'Abos / Streaming'),
+  ]
+  const rec = detectRecurring(txs, { referenceDate: '2024-03-20' })
+  const anchors = [{ datum: '2024-03-20', saldo: -200 }]
+  const budget = computeBudget(txs, anchors, rec, DEFAULT_SETTINGS, '2024-03-20')
+
+  it('erkennt kündbare Posten und verkürzt die Monate bis zum Nullstand', () => {
+    const plan = buildEscapePlan(txs, categories, rec, budget, DEFAULT_SETTINGS, anchors)
+    expect(plan.imMinus).toBe(true)
+    expect(plan.luecke).toBe(200)
+    expect(plan.ueberschussMonatlich).toBeCloseTo(30, 2)
+    expect(plan.monateBasis).toBeCloseTo(200 / 30, 5)
+
+    const netflix = plan.kandidaten.find((k) => k.name === 'Netflix')!
+    expect(netflix.stufe).toBe('sofort')
+    expect(netflix.monatlich).toBeCloseTo(10, 2)
+    expect(netflix.dispoAusloeser).toBe(true)
+    expect(plan.kandidaten.find((k) => k.name === 'Vodafone GmbH')?.stufe).toBe('pruefen')
+    expect(plan.kandidaten.some((k) => k.name === 'Wohnungsbau GmbH')).toBe(false)
+
+    // zuerst das Abo, dann der Vertrag: 30+10=40, danach 40+20=60
+    expect(plan.stufen.map((s) => s.name)).toEqual(['Netflix', 'Vodafone GmbH'])
+    expect(plan.stufen[0].monate).toBeCloseTo(200 / 40, 5)
+    expect(plan.stufen[0].monateFrueher).toBeCloseTo(200 / 30 - 200 / 40, 2)
+    expect(plan.stufen[0].zinsenGespart).toBeGreaterThan(0)
+    expect(plan.stufen[1].monate).toBeCloseTo(200 / 60, 5)
+    expect(plan.variablerHebel?.name).toBe('Lebensmittel')
+    expect(plan.variablerHebel?.zehnProzent).toBeGreaterThan(0)
+    expect(plan.hinweis).toBeUndefined()
+  })
+
+  it('nennt keinen Abbauzeitraum, wenn kein Überschuss bleibt', () => {
+    const flat = [
+      tx('2024-01-01', 300, 'Arbeitgeber GmbH', 'Gehalt / Lohn'),
+      tx('2024-01-05', -300, 'Wohnungsbau GmbH', 'Miete / Wohnen'),
+      tx('2024-02-01', 300, 'Arbeitgeber GmbH', 'Gehalt / Lohn'),
+      tx('2024-02-05', -300, 'Wohnungsbau GmbH', 'Miete / Wohnen'),
+      tx('2024-03-01', 300, 'Arbeitgeber GmbH', 'Gehalt / Lohn'),
+      tx('2024-03-05', -300, 'Wohnungsbau GmbH', 'Miete / Wohnen'),
+    ]
+    const r = detectRecurring(flat, { referenceDate: '2024-03-20' })
+    const a = [{ datum: '2024-03-20', saldo: -80 }]
+    const b = computeBudget(flat, a, r, DEFAULT_SETTINGS, '2024-03-20')
+    const plan = buildEscapePlan(flat, categories, r, b, DEFAULT_SETTINGS, a)
+    expect(plan.ueberschussMonatlich).toBeCloseTo(0, 2)
+    expect(plan.monateBasis).toBeUndefined()
+    expect(plan.stufen).toHaveLength(0)
+    expect(plan.hinweis).toMatch(/kein Überschuss/)
   })
 })
